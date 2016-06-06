@@ -2,13 +2,24 @@
 import requests
 import ConfigParser
 import time
+import os
+import sys
+from os.path import expanduser
 
 config = ConfigParser.SafeConfigParser()
 params = {}
 now = int(round(time.time()))
+log_dir = expanduser('~/cloudflare_logs/')
+config_file = './config.properties'
 
 def load_config():
-    config.readfp(open('/home/ubuntu/py/config.properties'))
+    if not os.path.isdir(log_dir):
+        os.makedirs(log_dir)
+
+    if os.path.exists(config_file):
+        config.readfp(open(config_file))
+    else:
+        sys.exit('config.properties does not exist!')
 
 def get_params():
     params['authEmail'] = config.get("Config", "auth-email")
@@ -18,10 +29,10 @@ def get_params():
     params['endTime'] = config.get("Config", "end-time")
     if len(str(params["startTime"])) == 0:
         params['startTime'] = str(now - 900)
-	params['startTime'] = params['startTime'][:-1] + '0'
+        params['startTime'] = params['startTime'][:-1] + '0'
     if len(str(params["endTime"])) == 0:
         params['endTime'] = str(now - 840)
-	params['endTime'] = params['endTime'][:-1] + '0'
+        params['endTime'] = params['endTime'][:-1] + '0'
 
 def make_request():
     headers = {"x-Auth-Key": params['authKey'], "x-Auth-Email": params['authEmail']}
@@ -32,8 +43,7 @@ def make_request():
 
 def print_stats():
     req = make_request()
-    # output_file = open('/home/ubuntu/py/output.txt', 'a')
-    output_file = open('/home/ubuntu/py/output.txt','a')
+    output_file = open(log_dir + 'output.txt','a')
     output_file.write(req.content)
     output_file.close()
 
@@ -42,7 +52,7 @@ def set_time():
     start = start[:-1] + '0'
     end = str(now - 900)
     end = end[:-1] + '0'
-    configFile = open('/home/ubuntu/py/config.properties', 'wb')
+    configFile = open(config_file, 'wb')
     config.set("Config", "start-time", start)
     config.set("Config", "end-time", end)
     config.write(configFile)
